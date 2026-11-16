@@ -9,10 +9,10 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
 <style>
-/* Layout: one narrow column — dial, controls, then the song (with its player) and volume; time setup locks while running */
+/* Layout: one narrow column — ringing panel, Timer/Alarm tabs (both keep running), then the shared player and volume */
 :root{
   --bg:#EEF1F6; --surface:#FFFFFF; --ink:#141821; --muted:#5B6474; --line:#D9DEE8;
-  --track:#E3E7EF; --accent:#2C47D9; --accent-ink:#FFFFFF; --accent-soft:#E4E8FC;
+  --track:#E3E7EF; --accent:#2C47D9; --accent-ink:#FFFFFF; --accent-soft:#E4E8FC; --knob:#FFFFFF;
   --alarm:#D81E5B; --alarm-soft:#FCE3EB; --ok:#1C7C4A; --err:#C0392B; --warn-soft:#FFF3D6; --warn-ink:#7A5200;
   --f-body:"IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   --f-num:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -21,7 +21,7 @@
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#0C0F14; --surface:#151922; --ink:#E8EBF2; --muted:#98A1B1; --line:#262C38;
-    --track:#222835; --accent:#8399FF; --accent-ink:#0C0F14; --accent-soft:#1D2440;
+    --track:#222835; --accent:#8399FF; --accent-ink:#0C0F14; --accent-soft:#1D2440; --knob:#E8EBF2;
     --alarm:#FF5A8C; --alarm-soft:#3A1726; --ok:#5FD08F; --err:#FF7B6B; --warn-soft:#33290F; --warn-ink:#F5C969; color-scheme:dark;
   }
 }
@@ -33,21 +33,21 @@ body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);fo
 .app{max-width:460px;margin:0 auto;padding-block:28px 40px;
   padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));
   display:flex;flex-direction:column;gap:20px}
-header{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.view{display:flex;flex-direction:column;gap:20px}
 h1{font-size:18px;font-weight:700;margin:0;letter-spacing:-0.01em}
-.state-pill{font-size:12px;font-weight:600;letter-spacing:.04em;padding:3px 10px;border-radius:999px;background:var(--track);color:var(--muted);white-space:nowrap}
-.app[data-state="running"] .state-pill{background:var(--accent-soft);color:var(--accent)}
-.app[data-state="done"] .state-pill{background:var(--alarm-soft);color:var(--alarm)}
 
+#banners{display:flex;flex-direction:column;gap:10px}
+#banners:empty{display:none}
 .banner{background:var(--warn-soft);color:var(--warn-ink);border-radius:12px;padding:12px 14px;font-size:13.5px}
 .banner b{display:block;margin-bottom:2px}
+.banner button{margin-top:8px;padding:5px 12px;font-size:13px;border-radius:8px;background:transparent;color:inherit;border-color:currentColor}
 
 .dial{position:relative;width:min(280px,100%);aspect-ratio:1;max-width:100%;margin:0 auto}
 .dial svg{width:100%;height:100%;display:block;transform:rotate(-90deg)}
 .dial .track{fill:none;stroke:var(--track);stroke-width:10}
 .dial .prog{fill:none;stroke:var(--accent);stroke-width:10;stroke-linecap:round;transition:stroke-dashoffset .25s linear, stroke .3s}
 .app[data-state="done"] .dial .prog{stroke:var(--alarm)}
-.readout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.readout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:0 24px;text-align:center}
 .time{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;font-size:clamp(46px,15vw,66px);letter-spacing:-0.03em;line-height:1}
 .time.long{font-size:clamp(36px,11vw,50px)}
 .sub{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
@@ -62,14 +62,14 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .secondary{min-width:96px}
 
 .done{background:var(--alarm-soft);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px}
-.done strong{font-size:17px;color:var(--alarm)}
+.done strong{font-size:17px;color:var(--alarm);overflow-wrap:anywhere}
 .done p{margin:0;font-size:14px}
 .done .row{display:flex;gap:10px;flex-wrap:wrap}
 .hot{flex:1;min-width:160px;background:var(--alarm);border-color:var(--alarm);color:#fff;font-size:16px}
 
 fieldset{border:0;margin:0;padding:0;min-width:0}
+fieldset:disabled{opacity:.55}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:16px}
-fieldset:disabled .panel{opacity:.55}
 .label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin-bottom:8px;display:block}
 .sublabel{font-size:12.5px;color:var(--muted);margin:12px 0 0;display:block}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -86,7 +86,8 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .url::placeholder{color:var(--muted)}
 .status{font-size:13px;margin-top:6px;min-height:1.4em;color:var(--muted);overflow-wrap:anywhere}
 .status.ok{color:var(--ok)} .status.err{color:var(--err)}
-.player{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;background:var(--track);margin-top:12px}
+.status:empty{min-height:0;margin-top:0}
+.player{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;border-radius:10px;overflow:hidden;background:var(--track)}
 .player iframe,.player > div{position:absolute;inset:0;width:100%;height:100%;border:0}
 .player .empty{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;text-align:center;padding:12px}
 .vol{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
@@ -95,59 +96,79 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 .test{padding:9px 14px;font-size:14px;background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 .test.on{background:var(--accent);color:var(--accent-ink)}
 .note{font-size:12.5px;color:var(--muted);margin:0}
-.check{display:flex;gap:8px;align-items:flex-start;font-size:14px;margin-top:10px;cursor:pointer}
-.check input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--accent);flex:none}
-.boostOn{color:var(--alarm)}
 .seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;background:var(--track);border-radius:12px;padding:4px}
-.seg button{border:0;background:transparent;color:var(--muted);padding:9px;border-radius:9px;font-size:15px}
+.seg button{border:0;background:transparent;color:var(--muted);padding:9px 6px;border-radius:9px;font-size:15px;font-variant-numeric:tabular-nums;min-width:0}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(20,24,33,.12)}
 .clock{width:100%;font-family:var(--f-num);font-size:26px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);
   background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+
+/* alarms */
+.next{text-align:center;padding:6px 0 2px}
+.next-time{font-family:var(--f-num);font-weight:600;font-variant-numeric:tabular-nums;font-size:clamp(40px,13vw,56px);letter-spacing:-0.03em;line-height:1.15}
+.alarms{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.alarms .empty{color:var(--muted);font-size:14px;text-align:center;padding:18px;border:1px dashed var(--line);border-radius:14px}
+.alarm{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 12px;align-items:center}
+.a-main{min-width:0}
+.a-time{font-family:var(--f-num);font-weight:600;font-size:24px;font-variant-numeric:tabular-nums;line-height:1.25}
+.a-name{font-family:var(--f-body);font-size:14px;font-weight:500;color:var(--muted);margin-left:8px;overflow-wrap:anywhere}
+.alarm.off .a-time{color:var(--muted)}
+.a-when,.a-song{font-size:13px;color:var(--muted);overflow-wrap:anywhere}
+.a-song{color:var(--ink)}
+.alarm.off .a-song{color:var(--muted)}
+.a-actions{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.small{padding:7px 12px;font-size:13.5px;border-radius:10px;font-weight:500;background:var(--bg)}
+.small.danger{color:var(--err)}
+.switch{width:52px;height:30px;border-radius:999px;padding:0;border:0;background:var(--track);position:relative;flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--knob);box-shadow:0 1px 2px rgba(20,24,33,.3);transition:transform .15s}
+.switch[aria-checked="true"]{background:var(--accent)}
+.switch[aria-checked="true"]::after{transform:translateX(22px)}
+.undo{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13.5px;color:var(--muted)}
+.formrow{display:flex;gap:10px}
+.formrow .primary{font-size:15px}
+@media (prefers-reduced-motion: reduce){ .dial .prog,.switch::after{transition:none} }
 </style>
 </head>
 <body>
 <main class="app" id="app" data-state="idle">
-  <header>
-    <h1>노래 알람 타이머</h1>
-    <span class="state-pill" id="pill">대기</span>
-  </header>
+  <header><h1>노래 알람 타이머</h1></header>
 
-  <div class="banner" id="banner" hidden></div>
+  <div id="banners"></div>
 
-  <div class="seg" role="group" aria-label="모드">
-    <button type="button" id="modeTimer" aria-pressed="true">타이머</button>
-    <button type="button" id="modeAlarm" aria-pressed="false">알람</button>
-  </div>
-
-  <div class="dial">
-    <svg viewBox="0 0 260 260" aria-hidden="true">
-      <circle class="track" cx="130" cy="130" r="120"></circle>
-      <circle class="prog" id="prog" cx="130" cy="130" r="120" stroke-dasharray="753.98" stroke-dashoffset="0"></circle>
-    </svg>
-    <div class="readout">
-      <div class="time" id="time" role="timer">5:00</div>
-      <div class="sub" id="sub">5분</div>
-    </div>
-  </div>
-
-  <div class="controls">
-    <button class="primary" id="mainBtn" type="button">시작</button>
-    <button class="secondary" id="resetBtn" type="button">초기화</button>
-  </div>
-
-  <section class="done" id="donePanel" hidden aria-live="assertive">
-    <strong id="doneTitle">시간 끝!</strong>
-    <p id="doneMsg">노래를 재생하고 있어요.</p>
+  <section class="done" id="ringPanel" hidden aria-live="assertive">
+    <strong id="ringTitle"></strong>
+    <p id="ringMsg"></p>
     <div class="row">
       <button type="button" class="hot" id="playNowBtn" hidden>노래 틀기</button>
       <a class="btn hot" id="songLink" href="#" target="_blank" rel="noopener noreferrer" hidden>유튜브에서 노래 열기</a>
-      <button type="button" id="stopBtn">노래 끄기</button>
+      <button type="button" id="stopBtn">끄기</button>
     </div>
   </section>
 
-  <fieldset id="timeSetup">
+  <div class="seg" role="group" aria-label="화면 선택">
+    <button type="button" id="tabTimer" aria-pressed="true">타이머</button>
+    <button type="button" id="tabAlarm" aria-pressed="false">알람</button>
+  </div>
+
+  <!-- ===== timer ===== -->
+  <section class="view" id="viewTimer">
+    <div class="dial">
+      <svg viewBox="0 0 260 260" aria-hidden="true">
+        <circle class="track" cx="130" cy="130" r="120"></circle>
+        <circle class="prog" id="prog" cx="130" cy="130" r="120" stroke-dasharray="753.98" stroke-dashoffset="0"></circle>
+      </svg>
+      <div class="readout">
+        <div class="time" id="time" role="timer">5:00</div>
+        <div class="sub" id="sub">5분</div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="primary" id="mainBtn" type="button">시작</button>
+      <button class="secondary" id="resetBtn" type="button">초기화</button>
+    </div>
+
     <div class="panel">
-      <div id="timerSec">
+      <fieldset id="durSetup">
         <span class="label" id="durLabel">시간 설정</span>
         <div class="chips" id="chips" role="group" aria-labelledby="durLabel">
           <button type="button" class="chip" data-sec="60">1분</button>
@@ -162,27 +183,69 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
           <label><input id="inM" type="number" inputmode="numeric" min="0" max="59" value="5" aria-label="분"><span>분</span></label>
           <label><input id="inS" type="number" inputmode="numeric" min="0" max="59" value="0" aria-label="초"><span>초</span></label>
         </div>
-      </div>
-      <div id="alarmSec" hidden>
-        <label class="label" for="alarmAt">울릴 시각</label>
-        <input class="clock" id="alarmAt" type="time" value="07:00" step="60">
-        <div class="status" id="alarmHint"></div>
-      </div>
+      </fieldset>
       <div>
-        <label class="label" for="link">끝나면 틀 노래 (유튜브 링크)</label>
+        <label class="label" for="link">타이머가 끝나면 틀 노래 (유튜브 링크)</label>
         <input class="url" id="link" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtu.be/... 또는 youtube.com/watch?v=...">
-        <div class="status" id="linkStatus">링크를 붙여넣으면 아래에 플레이어가 나타나요.</div>
+        <div class="status" id="linkStatus"></div>
         <span class="sublabel" id="startLabel">노래 시작 위치</span>
         <div class="hms two" role="group" aria-labelledby="startLabel">
           <label><input id="stM" type="number" inputmode="numeric" min="0" max="599" value="0" aria-label="시작 위치 분"><span>분</span></label>
           <label><input id="stS" type="number" inputmode="numeric" min="0" max="59" value="0" aria-label="시작 위치 초"><span>초</span></label>
         </div>
-        <div class="player"><div id="yt"><div class="empty" id="ytEmpty">유튜브 링크를 넣으면 여기에 플레이어가 나와요</div></div></div>
       </div>
     </div>
-  </fieldset>
+  </section>
 
+  <!-- ===== alarms ===== -->
+  <section class="view" id="viewAlarm" hidden>
+    <div class="next">
+      <span class="label">다음 알람</span>
+      <div class="next-time" id="nextTime">--:--</div>
+      <div class="sub" id="nextSub">켜진 알람이 없어요</div>
+    </div>
+
+    <ul class="alarms" id="alarmList"></ul>
+    <div class="undo" id="undoBar" hidden><span id="undoText">알람을 삭제했어요.</span><button type="button" class="small" id="undoBtn">되돌리기</button></div>
+    <button type="button" class="primary" id="addBtn">알람 추가</button>
+
+    <form class="panel" id="alarmForm" hidden novalidate>
+      <strong id="formTitle">새 알람</strong>
+      <div>
+        <label class="label" for="aTime">울릴 시각</label>
+        <input class="clock" id="aTime" type="time" step="60" required>
+        <div class="status" id="aHint"></div>
+      </div>
+      <div>
+        <label class="label" for="aName">이름 (선택)</label>
+        <input class="url" id="aName" type="text" maxlength="30" autocomplete="off" placeholder="예: 기상, 학원 갈 시간">
+      </div>
+      <div>
+        <label class="label" for="aLink">이 알람에서 틀 노래 (유튜브 링크)</label>
+        <input class="url" id="aLink" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://youtu.be/... 또는 youtube.com/watch?v=...">
+        <div class="status" id="aLinkStatus"></div>
+        <span class="sublabel" id="aStartLabel">노래 시작 위치</span>
+        <div class="hms two" role="group" aria-labelledby="aStartLabel">
+          <label><input id="aStM" type="number" inputmode="numeric" min="0" max="599" value="0" aria-label="시작 위치 분"><span>분</span></label>
+          <label><input id="aStS" type="number" inputmode="numeric" min="0" max="59" value="0" aria-label="시작 위치 초"><span>초</span></label>
+        </div>
+      </div>
+      <div class="status err" id="formErr" role="alert"></div>
+      <div class="formrow">
+        <button type="submit" class="primary" id="saveBtn">저장</button>
+        <button type="button" class="secondary" id="cancelBtn">취소</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ===== shared player + volume ===== -->
   <div class="panel">
+    <div>
+      <span class="label">노래 미리 듣기</span>
+      <div class="status" id="previewLabel" style="margin:0 0 8px">미리 들을 노래가 없어요</div>
+      <div class="player"><div id="yt"><div class="empty" id="ytEmpty">유튜브 링크를 넣으면 여기에 플레이어가 나와요</div></div></div>
+      <div class="status" id="playerStatus"></div>
+    </div>
     <div>
       <label class="label" for="vol">노래 볼륨</label>
       <div class="vol">
@@ -190,51 +253,68 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
         <output id="volOut" for="vol">60%</output>
         <button type="button" class="test" id="testBtn">테스트 재생</button>
       </div>
-      <div class="status" id="testStatus">테스트 재생을 누르면 정한 시작 위치부터 이 볼륨으로 재생돼요. 듣는 중에도 볼륨을 바꿀 수 있어요.</div>
+      <div class="status" id="testStatus"></div>
     </div>
-    <p class="note">아이폰·아이패드에서는 볼륨 막대가 작동하지 않아서 기기 볼륨 버튼으로 조절해야 해요. 노래를 재생할 수 없을 때는 대신 알람음이 이 볼륨으로 울려요. 타이머나 알람이 켜져 있는 동안에는 이 탭을 닫지 말고, 컴퓨터가 절전 모드에 들어가지 않게 해 주세요.</p>
+    <p class="note">타이머와 알람은 서로 상관없이 동시에 쓸 수 있어요. 알람은 한 번 울리면 꺼지고, 다시 켜면 다음 그 시각에 울려요. 켜져 있는 동안에는 이 탭을 닫지 말고 컴퓨터가 절전 모드에 들어가지 않게 해 주세요. 아이폰·아이패드에서는 볼륨 막대가 작동하지 않아서 기기 볼륨 버튼으로 조절해야 해요.</p>
   </div>
 </main>
 
 <script>
 (function(){
   const $=id=>document.getElementById(id);
-  const app=$('app'), prog=$('prog'), mainBtn=$('mainBtn'), resetBtn=$('resetBtn'), pill=$('pill'), banner=$('banner');
-  const timeEl=$('time'), subEl=$('sub');
+  const app=$('app'), banners=$('banners');
+  const tabTimer=$('tabTimer'), tabAlarm=$('tabAlarm'), viewTimer=$('viewTimer'), viewAlarm=$('viewAlarm');
+  const prog=$('prog'), timeEl=$('time'), subEl=$('sub'), mainBtn=$('mainBtn'), resetBtn=$('resetBtn'), durSetup=$('durSetup');
   const inH=$('inH'), inM=$('inM'), inS=$('inS'), link=$('link'), linkStatus=$('linkStatus'), stM=$('stM'), stS=$('stS');
-  const vol=$('vol'), volOut=$('volOut'), testBtn=$('testBtn'), testStatus=$('testStatus');
-  const donePanel=$('donePanel'), doneMsg=$('doneMsg'), playNowBtn=$('playNowBtn'), songLink=$('songLink'), stopBtn=$('stopBtn'), timeSetup=$('timeSetup');
-  const modeTimer=$('modeTimer'), modeAlarm=$('modeAlarm'), timerSec=$('timerSec'), alarmSec=$('alarmSec'), alarmAt=$('alarmAt'), alarmHint=$('alarmHint'), doneTitle=$('doneTitle');
-  const C=2*Math.PI*120;
-  let mode='timer', alarmTarget=0, lastResync=0;
+  const nextTime=$('nextTime'), nextSub=$('nextSub'), alarmList=$('alarmList'), addBtn=$('addBtn'), undoBar=$('undoBar'), undoBtn=$('undoBtn');
+  const alarmForm=$('alarmForm'), formTitle=$('formTitle'), aTime=$('aTime'), aHint=$('aHint'), aName=$('aName'), aLink=$('aLink'), aLinkStatus=$('aLinkStatus'), aStM=$('aStM'), aStS=$('aStS'), formErr=$('formErr'), cancelBtn=$('cancelBtn');
+  const ringPanel=$('ringPanel'), ringTitle=$('ringTitle'), ringMsg=$('ringMsg'), playNowBtn=$('playNowBtn'), songLink=$('songLink'), stopBtn=$('stopBtn');
+  const previewLabel=$('previewLabel'), playerStatus=$('playerStatus'), vol=$('vol'), volOut=$('volOut'), testBtn=$('testBtn'), testStatus=$('testStatus');
+  const C=2*Math.PI*120, KEY='songTimer', BASE_TITLE='노래 알람 타이머';
 
-  let state='idle', total=300, remainMs=300000, endAt=0, tick=null, wake=null;
-  let song=null;                 // {ok, id, url, label, t}
-  let ctx=null, endOsc=null, chimeBus=null, chimeKind=null, chimeTimer=null;
-  let player=null, ytReady=false, ytFailed=false, playerReady=false, loadedId=null, ytError=0, primed=false, priming=false, testing=false, playCheck=null;
+  let tab='timer';
+  let tState='idle', total=300, remainMs=300000, endAt=0;          // timer
+  let alarms=[], editId=null, selId=null, lastDeleted=null, undoTimer=null;   // alarms: {id,time:'HH:MM',name,link,vid,start,on,at}
+  let titles={};                                                    // video id -> title, once the player has told us
+  let ring=null, playCheck=null;                                    // what is ringing now: {kind,title,vid,start,note,also}
+  let ctx=null, wakeOsc=null, lastResync=0, chimeBus=null, chimeKind=null, chimeTimer=null, wake=null;
+  let player=null, ytReady=false, ytFailed=false, playerReady=false, loaded={id:null,start:0}, ytErr={}, primed=false, priming=false, testing=false, lastTargetId=null;
+  let needGesture=false;
 
   /* ---------- storage ---------- */
-  function load(){ try{ return JSON.parse(localStorage.getItem('songTimer')||'null'); }catch(e){ return null; } }
-  function save(){ try{ localStorage.setItem('songTimer', JSON.stringify({mode,alarmAt:alarmAt.value,h:inH.value,m:inM.value,s:inS.value,link:link.value,stM:stM.value,stS:stS.value,vol:vol.value})); }catch(e){} }
+  function load(){ try{ return JSON.parse(localStorage.getItem(KEY)||'null'); }catch(e){ return null; } }
+  function save(){
+    const used=new Set(alarms.map(a=>a.vid).filter(Boolean)); const ts=timerSong(); if(ts) used.add(ts.id);
+    if(editId!==null){ const f=parseYT(aLink.value); if(f&&f.ok) used.add(f.id); }
+    for(const k of Object.keys(titles)) if(!used.has(k)) delete titles[k];
+    try{ localStorage.setItem(KEY, JSON.stringify({tab,h:inH.value,m:inM.value,s:inS.value,link:link.value,stM:stM.value,stS:stS.value,vol:vol.value,alarms,titles})); }catch(e){}
+  }
 
   /* ---------- helpers ---------- */
   const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,Math.floor(Number(v)||0)));
   const readInputs=()=>clamp(inH.value,0,23)*3600+clamp(inM.value,0,59)*60+clamp(inS.value,0,59);
   function setInputs(sec){ inH.value=Math.floor(sec/3600); inM.value=Math.floor(sec%3600/60); inS.value=sec%60; }
-  const startSec=()=>clamp(stM.value,0,599)*60+clamp(stS.value,0,59);
+  const startOf=(mEl,sEl)=>clamp(mEl.value,0,599)*60+clamp(sEl.value,0,59);
   const volume=()=>clamp(vol.value,0,100);
-  const alarmVol=()=>volume(); // the backup alarm follows the song volume
   function fmt(sec){ const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,p=n=>String(n).padStart(2,'0'); return h?h+':'+p(m)+':'+p(s):m+':'+p(s); }
   function words(sec){ const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,o=[]; if(h)o.push(h+'시간'); if(m)o.push(m+'분'); if(s)o.push(s+'초'); return o.join(' ')||'0초'; }
-  function nextOccurrence(){
-    const parts=(alarmAt.value||'07:00').split(':').map(Number);
-    const d=new Date(); d.setHours(parts[0]||0, parts[1]||0, 0, 0);
-    if(d.getTime()<=Date.now()) d.setDate(d.getDate()+1);
-    return d;
-  }
   const clockText=d=>d.toLocaleTimeString('ko-KR',{hour:'numeric',minute:'2-digit'});
   function dayText(d){ const t=new Date(); t.setHours(0,0,0,0); const x=new Date(d); x.setHours(0,0,0,0); return Math.round((x-t)/86400000)===0?'오늘':'내일'; }
-  function showBanner(title,text){ banner.innerHTML=''; const b=document.createElement('b'); b.textContent=title; banner.append(b, text); banner.hidden=false; }
+  const leftText=ms=> ms<60000 ? Math.max(1,Math.ceil(ms/1000))+'초' : words(Math.ceil(ms/60000)*60);
+  const whenText=ms=>dayText(new Date(ms))+' · '+leftText(ms-Date.now())+' 뒤';
+  const startText=sec=>!sec?'처음부터':(sec>=60?Math.floor(sec/60)+'분 ':'')+(sec%60)+'초부터';
+  const songText=(vid,start)=>(titles[vid]||'영상 ID '+vid)+' · '+startText(start);
+  const watchUrl=(vid,start)=>'https://www.youtube.com/watch?v='+vid+(start>0?'&t='+start+'s':'');
+  function setText(el,s){ if(el && el.textContent!==s) el.textContent=s; }
+  function el(tag,cls,text){ const n=document.createElement(tag); if(cls) n.className=cls; if(text!=null) n.textContent=text; return n; }
+
+  function setBanner(key,title,text,closable){
+    let b=banners.querySelector('[data-key="'+key+'"]');
+    if(!b){ b=el('div','banner'); b.dataset.key=key; banners.appendChild(b); }
+    b.textContent=''; b.append(el('b',null,title), text);
+    if(closable){ const x=el('button',null,'닫기'); x.type='button'; x.addEventListener('click',()=>clearBanner(key)); b.append(document.createElement('br'), x); }
+  }
+  function clearBanner(key){ const b=banners.querySelector('[data-key="'+key+'"]'); if(b) b.remove(); }
 
   /* ---------- YouTube link parsing ---------- */
   function parseYT(raw){
@@ -251,7 +331,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       if(!id && u.pathname==='/playlist') return {ok:false, playlist:true};
     } else return {ok:false};
     if(!id||!idRe.test(id)) return {ok:false};
-    return {ok:true, id, url:'https://www.youtube.com/watch?v='+id, label:'영상 ID '+id, t:tRaw};
+    return {ok:true, id, t:tRaw};
   }
   function parseT(t){
     if(!t) return 0; t=String(t).trim();
@@ -259,120 +339,153 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     const m=t.match(/^(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/); if(!m) return 0;
     return (Number(m[1])||0)*3600+(Number(m[2])||0)*60+(Number(m[3])||0);
   }
-  function songUrl(){ if(!song) return '#'; const u=new URL(song.url); const s=startSec(); if(s>0) u.searchParams.set('t',s+'s'); return u.href; }
-
-  function checkLink(fromTyping){
-    song=parseYT(link.value);
-    linkStatus.className='status';
-    if(!song){ linkStatus.textContent='링크를 붙여넣으면 아래에 플레이어가 나타나요. 링크가 없으면 알람 소리만 울려요.'; }
-    else if(!song.ok){
-      linkStatus.classList.add('err');
-      linkStatus.textContent= song.playlist ? '재생목록 링크는 안 돼요. 재생목록 안의 영상 하나를 열어서 그 링크를 넣어 주세요.' : '유튜브 주소가 아니에요. youtu.be/… 나 youtube.com/watch?v=… 형태의 링크를 넣어 주세요.';
-      song=null;
-    } else {
-      const t=parseT(song.t);
-      if(fromTyping && t>0 && startSec()===0){ stM.value=Math.floor(t/60); stS.value=t%60; }
-      const ss=startSec();
-      linkStatus.classList.add('ok');
-      linkStatus.textContent='확인됨 · '+song.label+' · '+(ss?Math.floor(ss/60)+'분 '+(ss%60)+'초부터':'처음부터');
+  const BAD_LINK='유튜브 주소가 아니에요. youtu.be/… 나 youtube.com/watch?v=… 형태의 링크를 넣어 주세요.';
+  const BAD_LIST='재생목록 링크는 안 돼요. 재생목록 안의 영상 하나를 열어서 그 링크를 넣어 주세요.';
+  // Shows what a link field holds; fills the start position from the link's own ?t= when the user just pasted it.
+  function describeLink(input, status, mEl, sEl, fromTyping, emptyText){
+    const sg=parseYT(input.value);
+    status.className='status';
+    if(!sg) status.textContent=emptyText;
+    else if(!sg.ok){ status.classList.add('err'); status.textContent=sg.playlist?BAD_LIST:BAD_LINK; }
+    else {
+      const t=parseT(sg.t);
+      if(fromTyping && t>0 && startOf(mEl,sEl)===0){ mEl.value=Math.floor(t/60); sEl.value=t%60; }
+      status.classList.add('ok'); status.textContent='확인됨 · '+songText(sg.id,startOf(mEl,sEl));
     }
-    syncPlayer();
+    return sg;
+  }
+  const checkLink=f=>describeLink(link, linkStatus, stM, stS, f, '링크가 없으면 타이머가 끝날 때 알람음이 울려요.');
+  const checkALink=f=>describeLink(aLink, aLinkStatus, aStM, aStS, f, '링크가 없으면 이 알람은 알람음으로 울려요.');
+  function timerSong(){ const sg=parseYT(link.value); return sg&&sg.ok?{id:sg.id,start:startOf(stM,stS)}:null; }
+
+  /* ---------- alarms: data ---------- */
+  function alarmDate(a){ const p=a.time.split(':').map(Number); const d=new Date(); d.setHours(p[0]||0,p[1]||0,0,0); return d; }
+  function nextOcc(time){ const p=time.split(':').map(Number); const d=new Date(); d.setHours(p[0]||0,p[1]||0,0,0); if(d.getTime()<=Date.now()) d.setDate(d.getDate()+1); return d.getTime(); }
+  const alarmClock=a=>clockText(alarmDate(a));
+  const alarmTitle=a=>alarmClock(a)+' 알람'+(a.name?' · '+a.name:'');
+  function nextArmed(needSong){ let best=null; for(const a of alarms){ if(a.on && a.at && (!needSong||a.vid) && (!best||a.at<best.at)) best=a; } return best; }
+  const armedCount=()=>alarms.filter(a=>a.on).length;
+
+  /* ---------- which song the shared player should hold ---------- */
+  function previewTarget(){
+    if(ring && ring.vid) return {id:ring.vid,start:ring.start,label:'지금 울리는 노래'};
+    if(tab==='alarm'){
+      if(editId!==null){ const sg=parseYT(aLink.value); if(sg&&sg.ok) return {id:sg.id,start:startOf(aStM,aStS),label:'편집 중인 알람의 노래'}; }
+      else { const a=alarms.find(x=>x.id===selId&&x.vid)||nextArmed(true)||alarms.find(x=>x.vid); if(a) return {id:a.vid,start:a.start,label:alarmTitle(a)+'의 노래',alarmId:a.id}; }
+    }
+    const ts=timerSong(); if(ts) return {id:ts.id,start:ts.start,label:'타이머 노래'};
+    const a=nextArmed(true)||alarms.find(x=>x.vid); if(a) return {id:a.vid,start:a.start,label:alarmTitle(a)+'의 노래',alarmId:a.id};
+    return null;
   }
 
-  /* ---------- YouTube player ---------- */
+  /* ---------- YouTube player (one player, shared by the timer and every alarm) ---------- */
+  const YT_ERR={2:'링크의 영상 ID가 올바르지 않아요.',5:'이 브라우저에서 영상을 재생할 수 없어요.',100:'영상을 찾을 수 없어요. 삭제됐거나 비공개일 수 있어요.',
+    101:'이 영상은 업로더가 다른 사이트에서의 재생을 막아 두었어요. 같은 노래의 다른 영상(가사 영상, 공식 오디오 등)을 써 보세요.',
+    150:'이 영상은 업로더가 다른 사이트에서의 재생을 막아 두었어요. 같은 노래의 다른 영상(가사 영상, 공식 오디오 등)을 써 보세요.',
+    153:'유튜브가 이 페이지의 주소 정보를 받지 못했어요. 파일을 웹사이트에 올려서 열어 주세요.'};
   function loadYTApi(){
-    if(location.protocol==='file:'){
-      showBanner('파일을 컴퓨터에서 바로 열었어요','유튜브는 웹사이트에 올라간 페이지에서만 재생을 허용해서, 이렇게 열면 플레이어에 "오류 153"이 뜰 수 있어요. 이 파일을 Netlify 같은 무료 호스팅에 올려서 그 주소로 열어 주세요.');
-    }
+    if(location.protocol==='file:') setBanner('file','파일을 컴퓨터에서 바로 열었어요','유튜브는 웹사이트에 올라간 페이지에서만 재생을 허용해서, 이렇게 열면 플레이어에 "오류 153"이 뜰 수 있어요. 웹사이트 주소로 열어 주세요.');
     window.onYouTubeIframeAPIReady=function(){ ytReady=true; syncPlayer(); };
-    const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api';
-    s.onerror=ytApiFailed; document.head.appendChild(s);
+    const s=document.createElement('script'); s.src='https://www.youtube.com/iframe_api'; s.onerror=ytApiFailed; document.head.appendChild(s);
     setTimeout(()=>{ if(!ytReady) ytApiFailed(); },10000);
   }
   function ytApiFailed(){
     if(ytReady||ytFailed) return; ytFailed=true;
-    showBanner('유튜브 플레이어를 불러오지 못했어요','인터넷 연결을 확인하거나, 이 페이지가 유튜브를 막는 곳(예: Claude 미리보기 창)에서 열린 건 아닌지 확인해 주세요. 그동안에는 끝났을 때 유튜브를 새 탭으로 여는 버튼이 대신 나와요.');
-    $('ytEmpty').textContent='플레이어를 불러오지 못했어요';
+    setBanner('yt','유튜브 플레이어를 불러오지 못했어요','인터넷 연결을 확인해 주세요. 그동안에는 시간이 되면 알람음이 울리고, 유튜브를 새 탭으로 여는 버튼이 나와요.');
+    const e=$('ytEmpty'); if(e) e.textContent='플레이어를 불러오지 못했어요';
   }
   function syncPlayer(){
-    if(!ytReady||!song||!song.ok) return;
+    const t=previewTarget();
+    setText(previewLabel, t?t.label:'미리 들을 노래가 없어요');
+    const tid=t?t.id:null;
+    if(tid!==lastTargetId){ lastTargetId=tid; playerStatus.className='status'+(tid&&ytErr[tid]?' err':''); playerStatus.textContent=tid&&ytErr[tid]?(YT_ERR[ytErr[tid]]||'플레이어 오류 '+ytErr[tid]):''; }
+    updateTestBtn();
+    if(!t||!ytReady) return;
     if(!player){
+      loaded={id:t.id,start:t.start};
       $('yt').innerHTML='';
-      const vars={playsinline:1, rel:0, start:startSec()};
+      const vars={playsinline:1, rel:0, start:t.start};
       if(/^https?:$/.test(location.protocol)) vars.origin=location.origin;
-      loadedId=song.id; ytError=0;
-      player=new YT.Player('yt',{
-        host:'https://www.youtube.com', videoId:song.id, playerVars:vars,
-        events:{
-          onReady:()=>{ playerReady=true; try{ player.setVolume(volume()); }catch(e){} syncPlayer(); updateTestBtn(); },
-          onStateChange:onYTState,
-          onError:onYTError
-        }
-      });
+      player=new YT.Player('yt',{ host:'https://www.youtube.com', videoId:t.id, playerVars:vars,
+        events:{ onReady:()=>{ playerReady=true; try{ player.setVolume(volume()); }catch(e){} grabTitle(); syncPlayer(); updateRowStates(); }, onStateChange:onYTState, onError:onYTError } });
       return;
     }
-    if(playerReady && loadedId!==song.id){
-      loadedId=song.id; primed=false; ytError=0;
-      try{ player.cueVideoById({videoId:song.id, startSeconds:startSec()}); }catch(e){}
-    }
+    if(!playerReady) return;
+    if(loaded.id===t.id) loaded.start=t.start;
+    else if(!ring && !testing && !priming){ loaded={id:t.id,start:t.start}; try{ player.cueVideoById({videoId:t.id,startSeconds:t.start}); }catch(e){} }
+  }
+  function grabTitle(){
+    try{ const d=player.getVideoData&&player.getVideoData(); if(d&&d.video_id&&d.title&&titles[d.video_id]!==d.title){ titles[d.video_id]=d.title; save(); checkLink(); if(editId!==null) checkALink(); renderAlarms(); } }catch(e){}
   }
   function onYTState(e){
-    const S=YT.PlayerState;
+    const S=YT.PlayerState; grabTitle();
     if(priming && e.data===S.PLAYING){
       priming=false; primed=true;
-      try{ player.pauseVideo(); player.seekTo(startSec(),true); player.unMute(); player.setVolume(volume()); }catch(err){}
+      try{ player.pauseVideo(); player.seekTo(loaded.start,true); player.unMute(); player.setVolume(volume()); }catch(err){}
+      return;
     }
-    if(state==='done' && e.data===S.PLAYING){ clearTimeout(playCheck); if(chimeKind==='fallback') stopChimes(); playNowBtn.hidden=true; doneMsg.textContent='노래를 재생하고 있어요.'; stopBtn.textContent='노래 끄기'; }
-    if(e.data!==S.PLAYING && testing && e.data!==S.BUFFERING) testing=false;
-    updateTestBtn();
+    if(ring){
+      if(e.data===S.PLAYING){ clearTimeout(playCheck); if(chimeKind==='fallback') stopChimes(); playNowBtn.hidden=true; songLink.hidden=true; ringMsg.textContent=ringText('노래를 재생하고 있어요.'); }
+      else if(e.data===S.ENDED) ringMsg.textContent=ringText('노래가 끝났어요.');
+    }
+    if(testing && (e.data===S.PAUSED||e.data===S.ENDED||e.data===S.CUED) && playerState()===e.data){ testing=false; syncPlayer(); }   // ignore late events from an earlier video
+    updateTestBtn(); updateRowStates();
   }
   function onYTError(e){
-    const msg={2:'링크의 영상 ID가 올바르지 않아요.',5:'이 브라우저에서 영상을 재생할 수 없어요.',100:'영상을 찾을 수 없어요. 삭제됐거나 비공개일 수 있어요.',
-      101:'이 영상은 업로더가 다른 사이트에서의 재생을 막아 두었어요. 같은 노래의 다른 영상(가사 영상, 공식 오디오 등)을 써 보세요.',
-      150:'이 영상은 업로더가 다른 사이트에서의 재생을 막아 두었어요. 같은 노래의 다른 영상(가사 영상, 공식 오디오 등)을 써 보세요.',
-      153:'유튜브가 이 페이지의 주소 정보를 받지 못했어요. 파일을 웹사이트에 올려서 열어 주세요.'}[e.data]||('플레이어 오류 '+e.data);
-    linkStatus.className='status err'; linkStatus.textContent=msg;
-    ytError=e.data; priming=false; testing=false; updateTestBtn();
-    if(state==='done') fallback();
+    const id=loaded.id; if(id) ytErr[id]=e.data;
+    priming=false; testing=false; lastTargetId=null; syncPlayer(); updateRowStates();
+    if(ring && ring.vid===id){ clearTimeout(playCheck); fallback(); }
   }
-  function playSong(){
+  function playTarget(t){
     if(!player||!playerReady) return false;
-    try{ player.seekTo(startSec(),true); player.unMute(); player.setVolume(volume()); player.playVideo(); return true; }catch(e){ return false; }
+    priming=false;
+    try{
+      if(loaded.id!==t.id){ loaded={id:t.id,start:t.start}; player.loadVideoById({videoId:t.id,startSeconds:t.start}); }
+      else { loaded.start=t.start; player.seekTo(t.start,true); player.playVideo(); }
+      player.unMute(); player.setVolume(volume()); return true;
+    }catch(e){ return false; }
   }
   function pauseSong(){ try{ player && playerReady && player.pauseVideo(); }catch(e){} }
-  function isPlaying(){ try{ return player && playerReady && player.getPlayerState()===YT.PlayerState.PLAYING; }catch(e){ return false; } }
+  function playerState(){ try{ return player && playerReady ? player.getPlayerState() : -9; }catch(e){ return -9; } }
+  const isPlaying=()=>playerState()===1;
+  function prime(){
+    // A short muted play during a tap lets phones allow the song to start later without another tap.
+    if(ring||testing||primed||priming||!playerReady||!loaded.id||ytErr[loaded.id]) return;
+    try{ priming=true; player.mute(); player.playVideo(); setTimeout(()=>{ if(priming){ priming=false; try{ player.pauseVideo(); player.unMute(); }catch(e){} } },5000); }catch(e){ priming=false; }
+  }
 
   /* ---------- test playback ---------- */
   function updateTestBtn(){
-    const can=playerReady && song && state!=='running' && state!=='paused';
-    testBtn.disabled=!can;
-    const on=testing && isPlaying();
-    testBtn.classList.toggle('on',on);
-    testBtn.textContent=on?'테스트 정지':'테스트 재생';
+    const t=previewTarget();
+    testBtn.disabled=!(playerReady && t) || !!ring;
+    testBtn.classList.toggle('on',testing);
+    setText(testBtn, testing?'테스트 정지':'테스트 재생');
   }
-  testBtn.addEventListener('click',()=>{
-    if(testing && isPlaying()){ testing=false; pauseSong(); try{ player.seekTo(startSec(),true); }catch(e){} }
-    else { testing=playSong(); if(testing) primed=true; }
-    updateTestBtn();
-  });
+  function startTest(t){
+    if(!t) return;
+    delete ytErr[t.id]; lastTargetId=null;
+    ensureAudio(); testing=playTarget(t); if(testing) primed=true;
+    syncPlayer(); updateRowStates();
+  }
+  function stopTest(){ testing=false; pauseSong(); try{ player.seekTo(loaded.start,true); }catch(e){} syncPlayer(); updateRowStates(); }
+  testBtn.addEventListener('click',()=>{ if(testing) stopTest(); else startTest(previewTarget()); });
 
-  /* ---------- audio clock: fires the end on time even in a background tab, and plays the fallback chime ---------- */
+  /* ---------- audio clock: wakes the page on time even in a background tab, and plays the backup alarm ---------- */
   function ensureAudio(){
     const AC=window.AudioContext||window.webkitAudioContext; if(!AC) return;
     if(!ctx){ try{ ctx=new AC(); }catch(e){ return; } }
     if(ctx.state==='suspended') ctx.resume().catch(()=>{});
   }
-  function scheduleEnd(delaySec){
-    cancelEnd(); if(!ctx) return;
+  function nextDueMs(){ let t=Infinity; if(tState==='running') t=endAt; for(const a of alarms) if(a.on && a.at) t=Math.min(t,a.at); return t; }
+  function cancelWake(){ if(wakeOsc){ wakeOsc.onended=null; try{ wakeOsc.stop(); }catch(e){} try{ wakeOsc.disconnect(); }catch(e){} wakeOsc=null; } }
+  // One silent oscillator is set to end at the nearest upcoming event; its "ended" event is not slowed down like timers are in hidden tabs.
+  function reschedule(){
+    cancelWake(); lastResync=Date.now();
+    const t=nextDueMs(); if(!isFinite(t)||!ctx) return;
     const o=ctx.createOscillator(), g=ctx.createGain(); g.gain.value=0; o.connect(g); g.connect(ctx.destination);
-    o.onended=()=>{ if(endOsc===o && state==='running'){ remainMs=0; finish(); } };
-    o.start(); o.stop(ctx.currentTime+Math.max(0.01,delaySec)); endOsc=o;
+    o.onended=()=>{ if(wakeOsc===o){ wakeOsc=null; check(); reschedule(); } };
+    o.start(); o.stop(ctx.currentTime+Math.max(0.01,(t-Date.now())/1000)); wakeOsc=o;
   }
-  function cancelEnd(){ if(endOsc){ endOsc.onended=null; try{ endOsc.stop(); }catch(e){} try{ endOsc.disconnect(); }catch(e){} endOsc=null; } }
-/*ALARM-START*/
-  // Alarm sound. Up to 100% it is a plain chime. Above 100% it is made louder-sounding without clipping:
-  // the gain goes up into a limiter (peaks stay put, the quieter decay comes up) and a brighter tone is mixed in
-  // around 2 kHz, where hearing is most sensitive. Nothing here can go past the device's own volume.
   function alarmParams(v){
     const base=Math.min(v,100)/100, boost=Math.max(0,v-100)/100;
     return { main: 0.5*base*base*(1+3*boost), bright: 0.9*boost, out: 1+0.3*boost };
@@ -396,157 +509,291 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       const o=ac.createOscillator(), g=ac.createGain(); o.type='sine'; o.frequency.value=f;
       g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(1,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+0.55);
       o.connect(g); g.connect(bus.main); o.start(t); o.stop(t+0.6);
-      const b=ac.createOscillator(), bg=ac.createGain(); b.type='square'; b.frequency.value=f*2;
-      bg.gain.setValueAtTime(0.0001,t); bg.gain.exponentialRampToValueAtTime(0.5,t+0.01); bg.gain.setValueAtTime(0.5,t+0.34); bg.gain.exponentialRampToValueAtTime(0.0001,t+0.46);
-      b.connect(bg); bg.connect(bus.bright); b.start(t); b.stop(t+0.5);
     };
     for(let i=0;i<count;i++){ const b=t0+i*1.6; note(b,880); note(b+0.18,1108.73); note(b+0.36,1318.51); }
   }
-/*ALARM-END*/
   function playChimes(count, kind){
     stopChimes(); ensureAudio(); if(!ctx) return;
-    chimeBus=makeAlarmBus(ctx, ctx.destination, alarmVol());
+    chimeBus=makeAlarmBus(ctx, ctx.destination, volume());
     scheduleAlarmNotes(ctx, chimeBus, ctx.currentTime+0.05, count);
     chimeKind=kind; chimeTimer=setTimeout(stopChimes, count*1600+600);
-    updateAlarmTestBtn();
   }
-  function stopChimes(){
-    clearTimeout(chimeTimer); chimeTimer=null;
-    if(chimeBus){ chimeBus.disconnect(); chimeBus=null; }
-    chimeKind=null; updateAlarmTestBtn();
-  }
-  function updateAlarmTestBtn(){}
+  function stopChimes(){ clearTimeout(chimeTimer); chimeTimer=null; if(chimeBus){ chimeBus.disconnect(); chimeBus=null; } chimeKind=null; }
 
   /* ---------- wake lock ---------- */
   async function lock(){ try{ if(navigator.wakeLock && !wake){ wake=await navigator.wakeLock.request('screen'); wake.addEventListener('release',()=>{wake=null;}); } }catch(e){ wake=null; } }
   function unlock(){ try{ wake && wake.release(); }catch(e){} wake=null; }
+  function updateLock(){ if(tState==='running'||armedCount()>0) lock(); else unlock(); }
 
-  /* ---------- timer ---------- */
-  function render(){
-    let shownMs=remainMs, frac;
-    if(mode==='alarm' && state==='idle'){ const d=nextOccurrence(); shownMs=d.getTime()-Date.now(); frac=1;
-      alarmHint.textContent='지금 켜면 '+dayText(d)+' '+clockText(d)+'에 울려요 ('+words(Math.ceil(shownMs/60000)*60)+' 뒤)'; }
-    else frac=total>0?Math.max(0,Math.min(1,remainMs/(total*1000))):0;
-    const sec=Math.max(0,Math.ceil(shownMs/1000));
-    timeEl.textContent=fmt(sec); timeEl.classList.toggle('long', mode==='alarm' ? sec>=3600 : total>=3600);
-    prog.style.strokeDashoffset=String(C*(1-frac));
-    prog.style.opacity=frac>0?'1':'0';
-    app.dataset.state=state;
-    pill.textContent={idle:'대기',running:'진행 중',paused:'일시정지',done:'끝'}[state];
-    mainBtn.textContent= mode==='alarm' ? (state==='running'?'알람 취소':state==='done'?'다시 설정':'알람 켜기')
-      : (state==='running'?'일시정지':state==='paused'?'계속':state==='done'?'다시 설정':'시작');
-    modeTimer.disabled=modeAlarm.disabled=(state==='running'||state==='paused');
-    modeTimer.setAttribute('aria-pressed',String(mode==='timer')); modeAlarm.setAttribute('aria-pressed',String(mode==='alarm'));
-    timerSec.hidden=mode!=='timer'; alarmSec.hidden=mode!=='alarm';
-    doneTitle.textContent=mode==='alarm'?'알람 시간이에요!':'시간 끝!';
-    resetBtn.disabled=state==='idle';
-    timeSetup.disabled=state==='running'||state==='paused';
-    donePanel.hidden=state!=='done';
-    if(mode==='alarm'){
-      const d=state==='idle'?nextOccurrence():new Date(alarmTarget);
-      subEl.textContent=state==='done'?clockText(d)+' 알람':dayText(d)+' '+clockText(d)+'에 울려요';
-    } else subEl.textContent=state==='idle'?words(total):state==='done'?words(total)+' 지남':words(total)+' 중';
-    document.title=state==='running'||state==='paused'?fmt(sec)+' · 노래 알람 타이머':state==='done'?doneTitle.textContent+' · 노래 알람 타이머':'노래 알람 타이머';
-    document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(Number(c.dataset.sec)===readInputs())));
-    updateTestBtn(); updateAlarmTestBtn();
+  /* ---------- ringing (timer end or an alarm) ---------- */
+  function ringText(base){
+    let s=base;
+    if(ring && ring.note) s+=' '+ring.note;
+    if(ring && ring.also && ring.also.length) s+=' 앞서 울린 것: '+ring.also.join(', ')+'.';
+    return s;
   }
-  function loop(){
-    if(state!=='running') return;
-    remainMs=endAt-Date.now();
-    if(remainMs<=0){ remainMs=0; finish(); return; }
-    // keep the audio-clock end time lined up with the real clock (matters for alarms set hours ahead)
-    if(Date.now()-lastResync>30000){ lastResync=Date.now(); scheduleEnd(remainMs/1000); }
-    render();
-  }
-  function startTick(){ stopTick(); tick=setInterval(loop,200); }
-  function stopTick(){ if(tick){ clearInterval(tick); tick=null; } }
-
-  function prime(){
-    // A short muted play during the Start tap lets phones allow the song to start later without another tap.
-    if(primed||priming||!playerReady||!song) return;
-    try{ priming=true; player.mute(); player.playVideo(); setTimeout(()=>{ if(priming){ priming=false; try{ player.pauseVideo(); player.unMute(); }catch(e){} } },5000); }catch(e){ priming=false; }
-  }
-  function start(){
-    if(chimeKind==='test') stopChimes();
-    if(mode==='alarm'){
-      alarmTarget=nextOccurrence().getTime(); remainMs=alarmTarget-Date.now(); total=Math.ceil(remainMs/1000);
-      ensureAudio(); if(testing){ testing=false; pauseSong(); } prime();
-      endAt=alarmTarget; state='running'; lastResync=Date.now();
-      scheduleEnd(remainMs/1000); startTick(); lock(); render(); return;
-    }
-    total=readInputs();
-    if(total<=0){ subEl.textContent='1초 이상으로 설정해 주세요'; return; }
-    remainMs=total*1000; resume();
-  }
-  function resume(){
-    ensureAudio(); if(chimeKind==='test') stopChimes();
-    if(testing){ testing=false; pauseSong(); }
-    prime();
-    endAt=Date.now()+remainMs; state='running'; lastResync=Date.now();
-    scheduleEnd(remainMs/1000); startTick(); lock(); render();
-  }
-  function pause(){ remainMs=Math.max(0,endAt-Date.now()); state='paused'; cancelEnd(); stopTick(); unlock(); render(); }
-  function reset(){
-    state='idle'; cancelEnd(); stopTick(); unlock(); stopChimes(); clearTimeout(playCheck); pauseSong(); testing=false;
-    total=readInputs(); remainMs=total*1000; render();
-  }
-  function setMode(m){ if(state==='running'||state==='paused') return; if(state==='done') reset(); mode=m; total=readInputs(); remainMs=total*1000; save(); render(); }
-  function finish(){
-    if(state==='done') return;
-    state='done'; cancelEnd(); stopTick(); unlock();
-    playNowBtn.hidden=true; songLink.hidden=true; stopBtn.textContent='노래 끄기';
-    render();
-    if(song && !ytError && playSong()){
-      doneMsg.textContent='노래를 재생하고 있어요.';
-      clearTimeout(playCheck); playCheck=setTimeout(()=>{ if(state==='done' && !isPlaying()) fallback(); },4000);
+  function startRing(src){
+    testing=false; priming=false; stopChimes(); clearTimeout(playCheck);
+    const also=ring?[ring.title].concat(ring.also||[]):[];
+    ring=Object.assign({also},src);
+    const r=ring;
+    playNowBtn.hidden=true; songLink.hidden=true;
+    ringTitle.textContent=ring.title; ringPanel.hidden=false;
+    if(ring.vid && !ytErr[ring.vid] && playTarget({id:ring.vid,start:ring.start})){
+      ringMsg.textContent=ringText('노래를 재생하고 있어요.');
+      watchPlay(r,0);
     } else fallback();
+    syncPlayer();
+    try{ ringPanel.scrollIntoView({block:'nearest'}); }catch(e){}
+  }
+  // If the song has not actually started a few seconds later (autoplay blocked, no network), ring the backup alarm.
+  function watchPlay(r,n){
+    playCheck=setTimeout(()=>{ if(ring!==r||isPlaying()) return; if(playerState()===3 && n<3) watchPlay(r,n+1); else fallback(); },4000);
   }
   function fallback(){
-    playChimes(30,'fallback'); stopBtn.textContent='알람 끄기';
-    if(song && playerReady && !ytError){ playNowBtn.hidden=false; doneMsg.textContent='브라우저가 자동 재생을 막았어요. 노래 틀기를 눌러 주세요.'; try{ playNowBtn.focus(); }catch(e){} }
-    else if(song){ songLink.href=songUrl(); songLink.hidden=false; doneMsg.textContent='플레이어를 쓸 수 없어서 알람이 울려요. 버튼을 누르면 유튜브 새 탭에서 노래가 나와요.'; }
-    else doneMsg.textContent='알람이 울리고 있어요. 유튜브 링크를 넣으면 다음엔 노래가 나와요.';
+    if(!ring) return;
+    playChimes(30,'fallback');
+    const v=ring.vid; playNowBtn.hidden=true; songLink.hidden=true;
+    if(v && playerReady && !ytErr[v]){ playNowBtn.hidden=false; ringMsg.textContent=ringText('브라우저가 자동 재생을 막아서 알람음이 울려요. 노래 틀기를 눌러 주세요.'); }
+    else if(v){ songLink.href=watchUrl(v,ring.start); songLink.hidden=false; ringMsg.textContent=ringText('노래를 재생할 수 없어서 알람음이 울려요. 버튼을 누르면 유튜브 새 탭에서 노래가 나와요.'); }
+    else ringMsg.textContent=ringText('알람음이 울리고 있어요.');
+  }
+  function dismissRing(){
+    ring=null; stopChimes(); clearTimeout(playCheck); pauseSong(); ringPanel.hidden=true;
+    if(tState==='done'){ tState='idle'; total=readInputs(); remainMs=total*1000; }
+    syncPlayer(); afterChange();
   }
 
+  /* ---------- the clock that drives both ---------- */
+  function check(){
+    const now=Date.now(); let fired=false;
+    if(tState==='running' && now>=endAt){
+      tState='done'; remainMs=0; fired=true;
+      const s=timerSong(); startRing({kind:'timer',title:'타이머 끝!',vid:s?s.id:null,start:s?s.start:0});
+    }
+    for(const a of alarms){
+      if(a.on && a.at && now>=a.at){
+        const late=now-a.at; a.on=false; a.at=0; fired=true;
+        startRing({kind:'alarm',title:alarmTitle(a),vid:a.vid||null,start:a.start||0,
+          note: late>90000 ? '('+leftText(late)+' 늦게 울렸어요. 컴퓨터가 절전 상태였을 수 있어요.)' : ''});
+      }
+    }
+    if(fired){ save(); updateLock(); renderAll(); }
+  }
+  function tick(){
+    check();
+    if(Date.now()-lastResync>30000) reschedule();   // keep the audio-clock wake-up lined up with the real clock
+    renderTick();
+  }
+  function gesture(){ ensureAudio(); if(needGesture){ needGesture=false; clearBanner('gesture'); } prime(); }
+  function afterChange(){ reschedule(); updateLock(); save(); renderAll(); }
+
+  /* ---------- timer ---------- */
+  function startTimer(){
+    total=readInputs();
+    if(total<=0){ subEl.textContent='1초 이상으로 설정해 주세요'; return; }
+    remainMs=total*1000; resumeTimer();
+  }
+  function resumeTimer(){ gesture(); endAt=Date.now()+remainMs; tState='running'; afterChange(); }
+  function pauseTimer(){ remainMs=Math.max(0,endAt-Date.now()); tState='paused'; afterChange(); }
+  function resetTimer(){
+    if(ring && ring.kind==='timer'){ dismissRing(); return; }
+    tState='idle'; total=readInputs(); remainMs=total*1000; afterChange();
+  }
+
+  /* ---------- alarms: list and form ---------- */
+  function renderAlarms(){
+    const ae=document.activeElement, fli=ae&&ae.closest?ae.closest('li[data-id]'):null, fkey=fli&&ae.dataset.act?[fli.dataset.id,ae.dataset.act]:null;
+    alarmList.textContent='';
+    const sorted=alarms.slice().sort((x,y)=>x.time.localeCompare(y.time));
+    if(!sorted.length) alarmList.append(el('li','empty','알람이 없어요. 알람 추가를 눌러 만들어 보세요.'));
+    for(const a of sorted){
+      const li=el('li','alarm'); li.dataset.id=a.id;
+      const main=el('div','a-main'), t=el('div','a-time',alarmClock(a));
+      if(a.name) t.append(el('span','a-name',a.name));
+      const when=el('div','a-when'); when.dataset.role='when';
+      main.append(t, when, el('div','a-song', a.vid ? '노래 · '+songText(a.vid,a.start) : '노래 없음 · 알람음이 울려요'));
+      const sw=el('button','switch'); sw.type='button'; sw.setAttribute('role','switch'); sw.dataset.act='toggle'; sw.setAttribute('aria-label',alarmTitle(a));
+      const acts=el('div','a-actions');
+      for(const [txt,act,cls] of [['미리 듣기','preview',''],['수정','edit',''],['삭제','delete',' danger']]){ const b=el('button','small'+cls,txt); b.type='button'; b.dataset.act=act; acts.append(b); }
+      li.append(main, sw, acts); alarmList.append(li);
+    }
+    updateRowStates();
+    if(fkey){ const n=alarmList.querySelector('li[data-id="'+fkey[0]+'"] [data-act="'+fkey[1]+'"]'); if(n){ try{ n.focus(); }catch(e){} } }
+  }
+  function updateRowStates(){
+    for(const li of alarmList.querySelectorAll('li[data-id]')){
+      const a=alarms.find(x=>x.id===li.dataset.id); if(!a) continue;
+      li.classList.toggle('off',!a.on);
+      li.querySelector('[data-act="toggle"]').setAttribute('aria-checked',String(!!a.on));
+      setText(li.querySelector('[data-role="when"]'), a.on ? whenText(a.at) : '꺼짐');
+      const pv=li.querySelector('[data-act="preview"]'), on=testing && selId===a.id && loaded.id===a.vid;
+      pv.disabled=!a.vid||!playerReady||!!ring; setText(pv, on?'정지':'미리 듣기');
+    }
+  }
+  alarmList.addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]'), li=e.target.closest('li[data-id]'); if(!b||!li) return;
+    const a=alarms.find(x=>x.id===li.dataset.id); if(!a) return;
+    if(b.dataset.act==='toggle'){
+      if(a.on){ a.on=false; a.at=0; } else { gesture(); a.on=true; a.at=nextOcc(a.time); }
+      afterChange();
+    } else if(b.dataset.act==='preview'){
+      if(testing && selId===a.id && loaded.id===a.vid){ stopTest(); return; }
+      testing=false;
+      if(editId!==null) closeForm();
+      selId=a.id; startTest({id:a.vid,start:a.start});
+    } else if(b.dataset.act==='edit') openForm(a.id);
+    else if(b.dataset.act==='delete'){
+      alarms.splice(alarms.indexOf(a),1); lastDeleted=a;
+      if(editId===a.id) closeForm();
+      if(selId===a.id) selId=null;
+      $('undoText').textContent='삭제했어요: '+alarmTitle(a); undoBar.hidden=false;
+      clearTimeout(undoTimer); undoTimer=setTimeout(()=>{ undoBar.hidden=true; lastDeleted=null; },8000);
+      syncPlayer(); afterChange();
+    }
+  });
+  undoBtn.addEventListener('click',()=>{
+    if(!lastDeleted) return;
+    const a=lastDeleted; lastDeleted=null; clearTimeout(undoTimer); undoBar.hidden=true;
+    if(alarms.some(x=>x.time===a.time)){ a.on=false; a.at=0; }      // its slot was taken meanwhile: bring it back switched off
+    else if(a.on) a.at=nextOcc(a.time);
+    alarms.push(a); syncPlayer(); afterChange();
+  });
+  function openForm(id){
+    const a=alarms.find(x=>x.id===id)||null;
+    if(testing){ testing=false; pauseSong(); }
+    editId=a?a.id:'new';
+    if(a){ aTime.value=a.time; aName.value=a.name||''; aLink.value=a.link||''; aStM.value=Math.floor((a.start||0)/60); aStS.value=(a.start||0)%60; }
+    else { const d=new Date(); d.setHours(d.getHours()+1,0,0,0); aTime.value=String(d.getHours()).padStart(2,'0')+':00'; aName.value=''; aLink.value=''; aStM.value=0; aStS.value=0; }
+    formTitle.textContent=a?'알람 수정':'새 알람'; formErr.textContent='';
+    alarmForm.hidden=false; addBtn.hidden=true;
+    checkALink(); updateFormHint(); syncPlayer(); updateRowStates();
+    try{ alarmForm.scrollIntoView({block:'nearest'}); aTime.focus(); }catch(e){}
+  }
+  function closeForm(){ editId=null; alarmForm.hidden=true; addBtn.hidden=false; formErr.textContent=''; }
+  function updateFormHint(){
+    if(editId===null) return;
+    const v=aTime.value;
+    if(!/^\d{2}:\d{2}/.test(v)){ setText(aHint,'울릴 시각을 정해 주세요.'); return; }
+    const ms=nextOcc(v.slice(0,5));
+    setText(aHint,'저장하면 '+dayText(new Date(ms))+' '+clockText(new Date(ms))+'에 울려요 ('+leftText(ms-Date.now())+' 뒤)');
+  }
+  alarmForm.addEventListener('submit',e=>{
+    e.preventDefault();
+    const v=aTime.value;
+    if(!/^\d{2}:\d{2}/.test(v)){ formErr.textContent='울릴 시각을 정해 주세요.'; return; }
+    const time=v.slice(0,5);
+    if(alarms.some(x=>x.id!==editId && x.time===time)){ formErr.textContent='같은 시각의 알람이 이미 있어요. 그 알람을 수정해 주세요.'; return; }
+    const raw=aLink.value.trim(); let vid=null;
+    if(raw){ const sg=parseYT(raw); if(!sg||!sg.ok){ formErr.textContent='유튜브 링크를 확인해 주세요. 노래 없이 알람음만 쓰려면 링크 칸을 비워 주세요.'; return; } vid=sg.id; }
+    let a=alarms.find(x=>x.id===editId);
+    if(!a){ a={id:Date.now().toString(36)+Math.floor(Math.random()*1e6).toString(36)}; alarms.push(a); }
+    Object.assign(a,{time, name:aName.value.trim(), link:raw, vid, start:vid?startOf(aStM,aStS):0, on:true, at:nextOcc(time)});
+    selId=a.id; closeForm(); gesture(); syncPlayer(); afterChange();
+  });
+  cancelBtn.addEventListener('click',()=>{ if(testing){ testing=false; pauseSong(); } closeForm(); syncPlayer(); renderAll(); });
+  addBtn.addEventListener('click',()=>openForm(null));
+  aTime.addEventListener('input',()=>{ formErr.textContent=''; updateFormHint(); });
+  aLink.addEventListener('input',()=>{ formErr.textContent=''; checkALink(true); syncPlayer(); });
+  [aStM,aStS].forEach(i=>{
+    i.addEventListener('input',()=>{ checkALink(); syncPlayer(); });
+    i.addEventListener('blur',()=>{ const s=startOf(aStM,aStS); aStM.value=Math.floor(s/60); aStS.value=s%60; checkALink(); });
+    i.addEventListener('focus',()=>{ try{ i.select(); }catch(e){} });
+  });
+
+  /* ---------- render ---------- */
+  function renderTick(){
+    // timer
+    const sec=Math.max(0,Math.ceil((tState==='running'?endAt-Date.now():remainMs)/1000));
+    if(tState==='running') remainMs=Math.max(0,endAt-Date.now());
+    setText(timeEl,fmt(sec)); timeEl.classList.toggle('long', total>=3600);
+    const frac=total>0?Math.max(0,Math.min(1,remainMs/(total*1000))):0;
+    prog.style.strokeDashoffset=String(C*(1-frac)); prog.style.opacity=frac>0?'1':'0';
+    setText(subEl, tState==='idle'?words(total) : tState==='running'?words(total)+' · '+clockText(new Date(endAt))+'에 끝나요' : tState==='paused'?words(total)+' · 일시정지' : words(total)+' 지남');
+    // tabs carry the state of the view you are not looking at
+    setText(tabTimer, tState==='running'?'타이머 · '+fmt(sec) : tState==='paused'?'타이머 · 일시정지' : tState==='done'?'타이머 · 끝':'타이머');
+    const n=armedCount(); setText(tabAlarm, n?'알람 · '+n+'개 켜짐':'알람');
+    // alarms
+    const nx=nextArmed(false);
+    setText(nextTime, nx?alarmClock(nx):'--:--');
+    setText(nextSub, nx?(nx.name?nx.name+' · ':'')+whenText(nx.at):'켜진 알람이 없어요');
+    for(const li of alarmList.querySelectorAll('li[data-id]')){ const a=alarms.find(x=>x.id===li.dataset.id); if(a) setText(li.querySelector('[data-role="when"]'), a.on?whenText(a.at):'꺼짐'); }
+    updateFormHint();
+    const title= ring?ring.title+' · '+BASE_TITLE : tState==='running'?fmt(sec)+' · '+BASE_TITLE : nx?alarmClock(nx)+' 알람 · '+BASE_TITLE : BASE_TITLE;
+    if(document.title!==title) document.title=title;
+  }
+  function renderAll(){
+    app.dataset.state=tState;
+    tabTimer.setAttribute('aria-pressed',String(tab==='timer')); tabAlarm.setAttribute('aria-pressed',String(tab==='alarm'));
+    viewTimer.hidden=tab!=='timer'; viewAlarm.hidden=tab!=='alarm';
+    setText(mainBtn, tState==='running'?'일시정지':tState==='paused'?'계속':tState==='done'?'다시 설정':'시작');
+    resetBtn.disabled=tState==='idle';
+    durSetup.disabled=tState==='running'||tState==='paused';
+    document.querySelectorAll('.chip').forEach(c=>c.setAttribute('aria-pressed',String(Number(c.dataset.sec)===readInputs())));
+    ringPanel.hidden=!ring;
+    renderAlarms(); renderTick(); updateTestBtn();
+  }
+  function setTab(t){ if(tab===t) return; if(testing && !ring){ testing=false; pauseSong(); } tab=t; save(); syncPlayer(); renderAll(); }
+
   /* ---------- events ---------- */
-  modeTimer.addEventListener('click',()=>setMode('timer'));
-  modeAlarm.addEventListener('click',()=>setMode('alarm'));
-  alarmAt.addEventListener('input',()=>{ save(); render(); });
-  setInterval(()=>{ if(mode==='alarm' && state==='idle') render(); },1000);
-  mainBtn.addEventListener('click',()=>{ if(mode==='alarm' && state==='running'){ reset(); return; } if(state==='idle') start(); else if(state==='running') pause(); else if(state==='paused') resume(); else reset(); });
-  resetBtn.addEventListener('click',reset);
-  playNowBtn.addEventListener('click',()=>{ stopChimes(); playSong(); });
+  tabTimer.addEventListener('click',()=>setTab('timer'));
+  tabAlarm.addEventListener('click',()=>setTab('alarm'));
+  mainBtn.addEventListener('click',()=>{ if(tState==='idle') startTimer(); else if(tState==='running') pauseTimer(); else if(tState==='paused') resumeTimer(); else resetTimer(); });
+  resetBtn.addEventListener('click',resetTimer);
+  playNowBtn.addEventListener('click',()=>{ if(!ring) return; stopChimes(); if(playTarget({id:ring.vid,start:ring.start})) watchPlay(ring,0); else fallback(); });
   songLink.addEventListener('click',stopChimes);
-  stopBtn.addEventListener('click',()=>{ stopChimes(); clearTimeout(playCheck); pauseSong(); doneMsg.textContent='껐어요. 다시 설정을 누르면 처음 화면으로 돌아가요.'; });
+  stopBtn.addEventListener('click',dismissRing);
   $('chips').addEventListener('click',e=>{ const b=e.target.closest('.chip'); if(!b) return; setInputs(Number(b.dataset.sec)); onDuration(); });
-  function onDuration(){ if(state==='idle'){ total=readInputs(); remainMs=total*1000; } save(); render(); }
+  function onDuration(){ if(tState==='idle'){ total=readInputs(); remainMs=total*1000; } save(); renderAll(); }
   [inH,inM,inS].forEach(i=>{ i.addEventListener('input',onDuration); i.addEventListener('blur',()=>{ setInputs(readInputs()); onDuration(); }); i.addEventListener('focus',()=>{ try{ i.select(); }catch(e){} }); });
-  link.addEventListener('input',()=>{ checkLink(true); save(); });
+  link.addEventListener('input',()=>{ checkLink(true); save(); syncPlayer(); });
   [stM,stS].forEach(i=>{
-    i.addEventListener('input',()=>{ checkLink(); save(); });
-    i.addEventListener('blur',()=>{ const s=startSec(); stM.value=Math.floor(s/60); stS.value=s%60; checkLink(); save(); });
+    i.addEventListener('input',()=>{ checkLink(); save(); syncPlayer(); });
+    i.addEventListener('blur',()=>{ const s=startOf(stM,stS); stM.value=Math.floor(s/60); stS.value=s%60; checkLink(); save(); });
     i.addEventListener('focus',()=>{ try{ i.select(); }catch(e){} });
   });
   function volHint(){
     testStatus.className='status'+(volume()===0?' err':'');
-    testStatus.textContent=volume()===0?'노래 볼륨이 0%라서 노래가 들리지 않아요.':'테스트 재생을 누르면 정한 시작 위치부터 이 볼륨으로 재생돼요. 듣는 중에도 볼륨을 바꿀 수 있어요.';
+    testStatus.textContent=volume()===0?'볼륨이 0%라서 시간이 돼도 소리가 들리지 않아요.':'테스트 재생을 누르면 위에 표시된 노래가 정한 시작 위치부터 이 볼륨으로 나와요. 알람음도 이 볼륨을 따라가요.';
   }
   vol.addEventListener('input',()=>{
     volOut.textContent=volume()+'%'; volHint();
     try{ playerReady && player.setVolume(volume()); }catch(e){}
-    if(chimeBus && ctx) chimeBus.set(alarmVol(), ctx.currentTime);
+    if(chimeBus && ctx) chimeBus.set(volume(), ctx.currentTime);
     save();
   });
-  document.addEventListener('keydown',e=>{ if(e.code!=='Space') return; const t=e.target; if(t&&/^(INPUT|BUTTON|A)$/.test(t.tagName)) return; e.preventDefault(); mainBtn.click(); });
-  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ loop(); if(state==='running') lock(); } });
+  document.addEventListener('keydown',e=>{ if(e.code!=='Space'||tab!=='timer') return; const t=e.target; if(t&&/^(INPUT|BUTTON|A)$/.test(t.tagName)) return; e.preventDefault(); mainBtn.click(); });
+  document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ check(); renderTick(); updateLock(); } });
+  // After a reload the browser will not let the page make sound until it is touched once.
+  function firstTouch(){ if(!needGesture) return; gesture(); reschedule(); updateLock(); }
+  document.addEventListener('pointerdown',firstTouch,true);
+  document.addEventListener('keydown',firstTouch,true);
 
   /* ---------- init ---------- */
   const saved=load();
-  if(saved){ inH.value=saved.h??0; inM.value=saved.m??5; inS.value=saved.s??0; link.value=saved.link||''; stM.value=saved.stM??0; stS.value=saved.stS??0; vol.value=saved.vol??60; if(saved.alarmAt) alarmAt.value=saved.alarmAt; if(saved.mode==='alarm') mode='alarm'; }
+  if(saved){
+    inH.value=saved.h??0; inM.value=saved.m??5; inS.value=saved.s??0; link.value=saved.link||''; stM.value=saved.stM??0; stS.value=saved.stS??0; vol.value=saved.vol??60;
+    if(saved.tab==='alarm'||(!saved.tab&&saved.mode==='alarm')) tab='alarm';
+    if(saved.titles && typeof saved.titles==='object') titles=saved.titles;
+    if(Array.isArray(saved.alarms)){
+      const missed=[], seen=new Set(), now=Date.now();
+      for(const r of saved.alarms){
+        if(!r || typeof r.time!=='string' || !/^\d{2}:\d{2}$/.test(r.time) || seen.has(r.time)) continue;
+        seen.add(r.time);
+        const sg=parseYT(r.link||''), a={id:String(r.id||'').replace(/[^a-z0-9]/gi,'')||Math.random().toString(36).slice(2), time:r.time, name:String(r.name||'').slice(0,30), link:String(r.link||''),
+          vid:sg&&sg.ok?sg.id:null, start:clamp(r.start,0,36000), on:!!r.on, at:Number(r.at)||0};
+        if(a.on && (!a.at || a.at<=now)){ a.on=false; a.at=0; missed.push(alarmTitle(a)); }
+        alarms.push(a);
+      }
+      if(missed.length) setBanner('missed','울리지 못한 알람이 있어요', missed.join(', ')+' — 페이지가 닫혀 있던 동안 시각이 지나서 꺼 두었어요.', true);
+      if(armedCount()>0){ needGesture=true; setBanner('gesture','켜져 있는 알람이 '+armedCount()+'개 있어요','페이지를 새로 열면 화면을 한 번 눌러야 브라우저가 소리 재생을 허용해요. 아무 곳이나 한 번 눌러 주세요.'); }
+    }
+  }
   if(!readInputs()) setInputs(300);
   setInputs(readInputs()); total=readInputs(); remainMs=total*1000;
   volOut.textContent=volume()+'%'; volHint();
-  checkLink(); render(); loadYTApi();
+  checkLink(); renderAll(); syncPlayer(); loadYTApi();
+  setInterval(tick,250);
 })();
 </script>
 </body>
