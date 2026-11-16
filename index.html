@@ -184,7 +184,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   <div class="panel">
     <div>
-      <label class="label" for="vol">노래 볼륨 (유튜브 최대 100%)</label>
+      <label class="label" for="vol">노래 볼륨</label>
       <div class="vol">
         <input id="vol" type="range" min="0" max="100" step="5" value="60">
         <output id="volOut" for="vol">60%</output>
@@ -192,17 +192,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
       </div>
       <div class="status" id="testStatus">테스트 재생을 누르면 정한 시작 위치부터 이 볼륨으로 재생돼요. 듣는 중에도 볼륨을 바꿀 수 있어요.</div>
     </div>
-    <div>
-      <label class="label" for="avol">알람음 볼륨 (최대 200%)</label>
-      <div class="vol">
-        <input id="avol" type="range" min="0" max="200" step="10" value="150">
-        <output id="avolOut" for="avol">150%</output>
-        <button type="button" class="test" id="atestBtn">알람음 테스트</button>
-      </div>
-      <div class="status" id="avolStatus"></div>
-      <label class="check"><input type="checkbox" id="overlay" checked><span>노래가 나올 때 처음 10초 동안 알람음도 같이 울리기</span></label>
-    </div>
-    <p class="note">아이폰·아이패드에서는 노래 볼륨 막대가 작동하지 않아서 기기 볼륨 버튼으로 조절해야 해요. 알람음 볼륨 막대는 작동해요. 타이머나 알람이 켜져 있는 동안에는 이 탭을 닫지 말고, 컴퓨터가 절전 모드에 들어가지 않게 해 주세요.</p>
+    <p class="note">아이폰·아이패드에서는 볼륨 막대가 작동하지 않아서 기기 볼륨 버튼으로 조절해야 해요. 노래를 재생할 수 없을 때는 대신 알람음이 이 볼륨으로 울려요. 타이머나 알람이 켜져 있는 동안에는 이 탭을 닫지 말고, 컴퓨터가 절전 모드에 들어가지 않게 해 주세요.</p>
   </div>
 </main>
 
@@ -215,7 +205,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   const vol=$('vol'), volOut=$('volOut'), testBtn=$('testBtn'), testStatus=$('testStatus');
   const donePanel=$('donePanel'), doneMsg=$('doneMsg'), playNowBtn=$('playNowBtn'), songLink=$('songLink'), stopBtn=$('stopBtn'), timeSetup=$('timeSetup');
   const modeTimer=$('modeTimer'), modeAlarm=$('modeAlarm'), timerSec=$('timerSec'), alarmSec=$('alarmSec'), alarmAt=$('alarmAt'), alarmHint=$('alarmHint'), doneTitle=$('doneTitle');
-  const avol=$('avol'), avolOut=$('avolOut'), atestBtn=$('atestBtn'), avolStatus=$('avolStatus'), overlay=$('overlay');
   const C=2*Math.PI*120;
   let mode='timer', alarmTarget=0, lastResync=0;
 
@@ -226,7 +215,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
 
   /* ---------- storage ---------- */
   function load(){ try{ return JSON.parse(localStorage.getItem('songTimer')||'null'); }catch(e){ return null; } }
-  function save(){ try{ localStorage.setItem('songTimer', JSON.stringify({mode,alarmAt:alarmAt.value,h:inH.value,m:inM.value,s:inS.value,link:link.value,stM:stM.value,stS:stS.value,vol:vol.value,avol:avol.value,overlay:overlay.checked})); }catch(e){} }
+  function save(){ try{ localStorage.setItem('songTimer', JSON.stringify({mode,alarmAt:alarmAt.value,h:inH.value,m:inM.value,s:inS.value,link:link.value,stM:stM.value,stS:stS.value,vol:vol.value})); }catch(e){} }
 
   /* ---------- helpers ---------- */
   const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,Math.floor(Number(v)||0)));
@@ -234,7 +223,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   function setInputs(sec){ inH.value=Math.floor(sec/3600); inM.value=Math.floor(sec%3600/60); inS.value=sec%60; }
   const startSec=()=>clamp(stM.value,0,599)*60+clamp(stS.value,0,59);
   const volume=()=>clamp(vol.value,0,100);
-  const alarmVol=()=>clamp(avol.value,0,200);
+  const alarmVol=()=>volume(); // the backup alarm follows the song volume
   function fmt(sec){ const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,p=n=>String(n).padStart(2,'0'); return h?h+':'+p(m)+':'+p(s):m+':'+p(s); }
   function words(sec){ const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60,o=[]; if(h)o.push(h+'시간'); if(m)o.push(m+'분'); if(s)o.push(s+'초'); return o.join(' ')||'0초'; }
   function nextOccurrence(){
@@ -426,20 +415,7 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     if(chimeBus){ chimeBus.disconnect(); chimeBus=null; }
     chimeKind=null; updateAlarmTestBtn();
   }
-  function updateAlarmTestBtn(){
-    const on=chimeKind==='test';
-    atestBtn.disabled=!(on || state==='idle' || (state==='done' && !chimeKind));
-    atestBtn.classList.toggle('on',on);
-    atestBtn.textContent=on?'테스트 정지':'알람음 테스트';
-  }
-  function avolHint(){
-    const v=alarmVol();
-    avolOut.textContent=v+'%';
-    avolStatus.className='status'+(v===0?' err':v>100?' boostOn':'');
-    avolStatus.textContent= v===0 ? '알람음이 0%라서 노래가 안 나오면 아무 소리도 안 나요.'
-      : v>100 ? '증폭 중이에요. 소리를 꽉 채우고 더 날카로운 음을 섞어서 크게 들리게 해요.'
-      : '알람음은 노래를 재생할 수 없을 때 울리고, 아래 옵션을 켜면 노래와 함께 울려요.';
-  }
+  function updateAlarmTestBtn(){}
 
   /* ---------- wake lock ---------- */
   async function lock(){ try{ if(navigator.wakeLock && !wake){ wake=await navigator.wakeLock.request('screen'); wake.addEventListener('release',()=>{wake=null;}); } }catch(e){ wake=null; } }
@@ -522,7 +498,6 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
     render();
     if(song && !ytError && playSong()){
       doneMsg.textContent='노래를 재생하고 있어요.';
-      if(overlay.checked) playChimes(7,'overlay');
       clearTimeout(playCheck); playCheck=setTimeout(()=>{ if(state==='done' && !isPlaying()) fallback(); },4000);
     } else fallback();
   }
@@ -559,20 +534,18 @@ input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appear
   vol.addEventListener('input',()=>{
     volOut.textContent=volume()+'%'; volHint();
     try{ playerReady && player.setVolume(volume()); }catch(e){}
+    if(chimeBus && ctx) chimeBus.set(alarmVol(), ctx.currentTime);
     save();
   });
-  avol.addEventListener('input',()=>{ avolHint(); if(chimeBus && ctx) chimeBus.set(alarmVol(), ctx.currentTime); save(); });
-  overlay.addEventListener('change',save);
-  atestBtn.addEventListener('click',()=>{ if(chimeKind==='test') stopChimes(); else playChimes(2,'test'); });
   document.addEventListener('keydown',e=>{ if(e.code!=='Space') return; const t=e.target; if(t&&/^(INPUT|BUTTON|A)$/.test(t.tagName)) return; e.preventDefault(); mainBtn.click(); });
   document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible'){ loop(); if(state==='running') lock(); } });
 
   /* ---------- init ---------- */
   const saved=load();
-  if(saved){ inH.value=saved.h??0; inM.value=saved.m??5; inS.value=saved.s??0; link.value=saved.link||''; stM.value=saved.stM??0; stS.value=saved.stS??0; vol.value=saved.vol??60; if(saved.avol!=null) avol.value=saved.avol; if(saved.overlay===false) overlay.checked=false; if(saved.alarmAt) alarmAt.value=saved.alarmAt; if(saved.mode==='alarm') mode='alarm'; }
+  if(saved){ inH.value=saved.h??0; inM.value=saved.m??5; inS.value=saved.s??0; link.value=saved.link||''; stM.value=saved.stM??0; stS.value=saved.stS??0; vol.value=saved.vol??60; if(saved.alarmAt) alarmAt.value=saved.alarmAt; if(saved.mode==='alarm') mode='alarm'; }
   if(!readInputs()) setInputs(300);
   setInputs(readInputs()); total=readInputs(); remainMs=total*1000;
-  volOut.textContent=volume()+'%'; volHint(); avolHint();
+  volOut.textContent=volume()+'%'; volHint();
   checkLink(); render(); loadYTApi();
 })();
 </script>
